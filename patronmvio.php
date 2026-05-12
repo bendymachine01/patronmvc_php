@@ -1,39 +1,66 @@
 <?php
-// ─── MODELO ───────────────────────────────────────────────
-$model = ['temperatura' => 20, 'observers' => []];
- 
-function model_set_temp(array &$model, int $temp): void {
-    $model['temperatura'] = $temp;
-    observers_notify($model, 'temp_changed', $temp);
+
+// =======================
+// MODELO
+// =======================
+function model_get_data($model) {
+    return $model['data'];
 }
- 
-// ─── OBSERVERS ────────────────────────────────────────────
-function observers_register(array &$model, string $event, callable $cb): void {
-    $model['observers'][$event][] = $cb;
+
+function model_add_item(&$model, $item) {
+    $model['data'][] = $item;
+
+    // Notificar a los observers
+    observers_notify($model, 'item_added', $item);
 }
- 
-function observers_notify(array $model, string $event, mixed $payload): void {
-    foreach ($model['observers'][$event] ?? [] as $cb) {
-        $cb($payload);
+
+// =======================
+// OBSERVERS
+// =======================
+function observers_register(&$model, $event, $callback) {
+    $model['observers'][$event][] = $callback;
+}
+
+function observers_notify($model, $event, $payload) {
+    if (!empty($model['observers'][$event])) {
+        foreach ($model['observers'][$event] as $callback) {
+            $callback($payload);
+        }
     }
 }
- 
-// ─── VISTAS ───────────────────────────────────────────────
-function view_temperatura(int $temp): string {
-    return "🌡️  Temperatura actual: {$temp}°C\n";
+
+// =======================
+// VISTA
+// =======================
+function view_render_list($items) {
+    echo "<ul>";
+    foreach ($items as $i => $item) {
+        echo "<li>$i: $item</li>";
+    }
+    echo "</ul>";
 }
- 
-function view_alerta(int $temp): string {
-    return $temp >= 35 ? "🔥 ¡ALERTA! Temperatura peligrosa.\n" : "";
-}
- 
-// ─── REGISTRAR OBSERVERS ──────────────────────────────────
-observers_register($model, 'temp_changed', fn($t) => print view_temperatura($t));
-observers_register($model, 'temp_changed', fn($t) => print view_alerta($t));
- 
-// ─── DEMO ─────────────────────────────────────────────────
-echo "--- Subiendo temperatura ---\n";
-model_set_temp($model, 28);
- 
-echo "\n--- Subiendo más ---\n";
-model_set_temp($model, 38);
+
+// =======================
+// USO DEL SISTEMA
+// =======================
+
+// Crear el modelo
+$model = [
+    'data' => [],
+    'observers' => []
+];
+
+// Registrar un observer
+observers_register($model, 'item_added', function($item) {
+    echo "Se agregó: $item <br>";
+});
+
+// Agregar elementos
+model_add_item($model, "Manzana");
+model_add_item($model, "Banano");
+model_add_item($model, "Uva");
+
+// Mostrar la lista
+view_render_list(model_get_data($model));
+
+?>
